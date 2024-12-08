@@ -24,6 +24,74 @@ class _HomePageState extends State<HomePage> {
     listenCurrentLocation();
   }
 
+  // Future<void> listenCurrentLocation() async {
+  //   final isGranted = await isLocationPermissionGranted();
+  //   if (isGranted) {
+  //     final isServiceEnable = await checkGPSServiceEnable();
+  //     if (isServiceEnable) {
+  //       Geolocator.getPositionStream(
+  //         locationSettings: const LocationSettings(
+  //             accuracy: LocationAccuracy.bestForNavigation, timeLimit: Duration(seconds: 10)),
+  //       ).listen((position) {
+  //         setState(() {
+  //           currentPosition = position;
+  //           LatLng currentLatLng =
+  //               LatLng(position.latitude, position.longitude);
+  //           print(currentPosition);
+  //           polylineCoordinates.add(currentLatLng);
+  //           polyLines.clear();
+  //           polyLines.add(
+  //             Polyline(
+  //               polylineId: const PolylineId('tracking-polyline'),
+  //               color: Colors.blue,
+  //               width: 6,
+  //               points: polylineCoordinates,
+  //             ),
+  //           );
+  //
+  //           userMarker = Marker(
+  //             markerId: const MarkerId('user-marker'),
+  //             position: currentLatLng,
+  //             draggable: true,
+  //             onDragEnd: (newPosition) {
+  //               setState(() {
+  //                 currentPosition = Position(
+  //                   latitude: newPosition.latitude,
+  //                   longitude: newPosition.longitude,
+  //                   timestamp: DateTime.now(),
+  //                   accuracy: position.accuracy,
+  //                   altitude: position.altitude,
+  //                   heading: position.heading,
+  //                   speed: position.speed,
+  //                   speedAccuracy: position.speedAccuracy,
+  //                   headingAccuracy: position.speedAccuracy,
+  //                   altitudeAccuracy: position.speedAccuracy,
+  //                 );
+  //               });
+  //             },
+  //             infoWindow: InfoWindow(
+  //               title: 'My Current Location',
+  //               snippet:
+  //                   'Lat: ${currentLatLng.latitude}, Lng: ${currentLatLng.longitude}',
+  //             ),
+  //             icon: BitmapDescriptor.defaultMarkerWithHue(
+  //               BitmapDescriptor.hueBlue,
+  //             ),
+  //           );
+  //         });
+  //       });
+  //     } else {
+  //       await Geolocator.openLocationSettings();
+  //     }
+  //   } else {
+  //     final result = await requestLocationPermission();
+  //     if (result) {
+  //       getCurrentLocation();
+  //     } else {
+  //       await Geolocator.openAppSettings();
+  //     }
+  //   }
+  // }
   Future<void> listenCurrentLocation() async {
     final isGranted = await isLocationPermissionGranted();
     if (isGranted) {
@@ -31,14 +99,23 @@ class _HomePageState extends State<HomePage> {
       if (isServiceEnable) {
         Geolocator.getPositionStream(
           locationSettings: const LocationSettings(
-              accuracy: LocationAccuracy.bestForNavigation, timeLimit: Duration(seconds: 10)),
+            accuracy: LocationAccuracy.bestForNavigation,
+            // timeLimit: Duration(seconds: 10),
+          ),
         ).listen((position) {
+          LatLng currentLatLng = LatLng(position.latitude, position.longitude);
+
           setState(() {
             currentPosition = position;
-            LatLng currentLatLng =
-                LatLng(position.latitude, position.longitude);
             print(currentPosition);
-            polylineCoordinates.add(currentLatLng);
+
+            // Add the new location to polyline coordinates if it has changed
+            if (polylineCoordinates.isEmpty ||
+                polylineCoordinates.last != currentLatLng) {
+              polylineCoordinates.add(currentLatLng);
+            }
+
+            // Update the polyline
             polyLines.clear();
             polyLines.add(
               Polyline(
@@ -49,30 +126,14 @@ class _HomePageState extends State<HomePage> {
               ),
             );
 
+            // Update the user marker
             userMarker = Marker(
               markerId: const MarkerId('user-marker'),
               position: currentLatLng,
-              draggable: true,
-              onDragEnd: (newPosition) {
-                setState(() {
-                  currentPosition = Position(
-                    latitude: newPosition.latitude,
-                    longitude: newPosition.longitude,
-                    timestamp: DateTime.now(),
-                    accuracy: position.accuracy,
-                    altitude: position.altitude,
-                    heading: position.heading,
-                    speed: position.speed,
-                    speedAccuracy: position.speedAccuracy,
-                    headingAccuracy: position.speedAccuracy,
-                    altitudeAccuracy: position.speedAccuracy,
-                  );
-                });
-              },
               infoWindow: InfoWindow(
                 title: 'My Current Location',
                 snippet:
-                    'Lat: ${currentLatLng.latitude}, Lng: ${currentLatLng.longitude}',
+                'Lat: ${currentLatLng.latitude}, Lng: ${currentLatLng.longitude}',
               ),
               icon: BitmapDescriptor.defaultMarkerWithHue(
                 BitmapDescriptor.hueBlue,
@@ -92,6 +153,7 @@ class _HomePageState extends State<HomePage> {
       }
     }
   }
+
 
   Future<bool> requestLocationPermission() async {
     LocationPermission permission = await Geolocator.requestPermission();
@@ -162,8 +224,41 @@ class _HomePageState extends State<HomePage> {
           }
         },
         backgroundColor: Colors.green,
-        child: const Icon(Icons.my_location),
+        child: const Icon(Icons.my_location, color: Colors.white,),
       ),
+      // body: SafeArea(
+      //   child: GoogleMap(
+      //     onMapCreated: (controller) {
+      //       googleMapController = controller;
+      //     },
+      //     mapType: MapType.satellite,
+      //     initialCameraPosition: CameraPosition(
+      //       zoom: 16,
+      //       target: _initialPosition,
+      //     ),
+      //     markers: {
+      //       Marker(
+      //         markerId: MarkerId('home'),
+      //         position: _initialPosition,
+      //         infoWindow: InfoWindow(
+      //             title: "My Home",
+      //             snippet:
+      //                 "Lat: ${_initialPosition.latitude}, Lng: ${_initialPosition.longitude}"),
+      //       ),
+      //     },
+      //     circles: <Circle>{
+      //       Circle(
+      //         circleId: const CircleId('circle-on-home'),
+      //         strokeWidth: 3,
+      //         radius: 100,
+      //         strokeColor: Colors.green,
+      //         center: _initialPosition,
+      //       ),
+      //     },
+      //     polylines: polyLines,
+      //   ),
+      // ),
+
       body: SafeArea(
         child: GoogleMap(
           onMapCreated: (controller) {
@@ -175,13 +270,15 @@ class _HomePageState extends State<HomePage> {
             target: _initialPosition,
           ),
           markers: {
+            if (userMarker != null) userMarker!,
             Marker(
               markerId: MarkerId('home'),
               position: _initialPosition,
               infoWindow: InfoWindow(
-                  title: "My Home",
-                  snippet:
-                      "Lat: ${_initialPosition.latitude}, Lng: ${_initialPosition.longitude}"),
+                title: "My Home",
+                snippet:
+                "Lat: ${_initialPosition.latitude}, Lng: ${_initialPosition.longitude}",
+              ),
             ),
           },
           circles: <Circle>{
@@ -196,6 +293,7 @@ class _HomePageState extends State<HomePage> {
           polylines: polyLines,
         ),
       ),
+
     );
   }
 }
